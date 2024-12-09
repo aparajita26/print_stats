@@ -1,0 +1,10 @@
+Total number of requests: 220
+Total data transmitted: 1133556917 bytes
+Most requested resource: /media//1.ts (33 requests, 15.00%)
+Remote host with the most requests: example.com (79 requests, 35.91%)
+HTTP Status Code Percentages:
+  1xx: 18.64%
+  2xx: 22.73%
+  3xx: 20.00%
+  4xx: 18.64%
+  5xx: 20.00%

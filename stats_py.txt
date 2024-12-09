@@ -1,0 +1,76 @@
+import re
+from collections import Counter, defaultdict
+
+# Regular expression to parse the Combined Log Format
+LOG_PATTERN = re.compile(
+    r'(?P<remote_host>\S+) \S+ \S+ \[(?P<timestamp>[^\]]+)\] "(?P<request>.+?)" (?P<status>\d{3}) (?P<bytes>\S+) "(?P<referer>.*?)" "(?P<user_agent>.*?)"'
+)
+
+def parse_log_line(line):
+    """Parse a log line using the Combined Log Format pattern."""
+    match = LOG_PATTERN.match(line)
+    if match:
+        return match.groupdict()
+    return None
+
+def calculate_statistics(log_file):
+    """Calculate and display statistics for a given log file."""
+    total_requests = 0
+    total_data_transmitted = 0
+    resource_counter = Counter()
+    remote_host_counter = Counter()
+    status_code_counter = Counter()
+
+    with open(log_file, 'r') as file:
+        for line in file:
+            log_data = parse_log_line(line)
+            if not log_data:
+                continue
+
+            total_requests += 1
+
+            # Update data transmitted
+            bytes_transmitted = log_data['bytes']
+            if bytes_transmitted != "-":
+                total_data_transmitted += int(bytes_transmitted)
+
+            # Update resource counter
+            request_line = log_data['request']
+            try:
+                method, resource, _ = request_line.split(" ")
+                resource_counter[resource] += 1
+            except ValueError:
+                continue
+
+            # Update remote host counter
+            remote_host_counter[log_data['remote_host']] += 1
+
+            # Update status code counter
+            status_code_counter[log_data['status'][0]] += 1
+
+    # Determine most requested resource
+    most_requested_resource, most_requested_count = resource_counter.most_common(1)[0]
+    resource_percentage = (most_requested_count / total_requests) * 100
+
+    # Determine remote host with the most requests
+    top_remote_host, top_remote_host_count = remote_host_counter.most_common(1)[0]
+    top_remote_host_percentage = (top_remote_host_count / total_requests) * 100
+
+    # Percentages of each class of HTTP status code
+    status_code_percentages = {
+        f"{code_class}xx": (count / total_requests) * 100
+        for code_class, count in status_code_counter.items()
+    }
+
+    # Print statistics
+    print(f"Total number of requests: {total_requests}")
+    print(f"Total data transmitted: {total_data_transmitted} bytes")
+    print(f"Most requested resource: {most_requested_resource} ({most_requested_count} requests, {resource_percentage:.2f}%)")
+    print(f"Remote host with the most requests: {top_remote_host} ({top_remote_host_count} requests, {top_remote_host_percentage:.2f}%)")
+    print("HTTP Status Code Percentages:")
+    for code_class, percentage in sorted(status_code_percentages.items()):
+        print(f"  {code_class}: {percentage:.2f}%")
+
+if __name__ == "__main__":
+    log_file_path = input("Enter the path to the log file: ").strip()
+    calculate_statistics(log_file_path)
